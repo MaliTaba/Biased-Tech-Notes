@@ -1,0 +1,86 @@
+
+## **.NET Upgrade: Field Notes**
+
+In the world of software development, the only constant is change. Frameworks evolve, libraries are updated, and the ground beneath our applications is in perpetual motion. For those of us who've been in the trenches for a while, the process of upgrading .NET libraries is a familiar ritual—one that can be either a seamless transition or a descent into dependency hell.
+
+I am collecting a set of commands and practices that have become helpful during my latest upgrade cycles. I'm sharing them here not as a definitive guide, but as a starting point for a broader conversation. Please feel free to share your own tips in the comments so we can enrich our collective wealth of knowledge.
+
+---
+
+#### **1. Always Start with a Clean Slate**
+
+Before beginning, ensure the service builds, runs, and all tests pass. This provides a stable baseline.
+
+My first step is always to remove all `bin` and `obj` directories. Lingering artifacts from a previous build are a common source of phantom errors that can send you down a rabbit hole for hours. I run this command frequently during an upgrade.
+
+```bash
+$ find . -type d -name bin -exec rm -rf {} + && find . -type d -name obj -exec rm -rf {} +
+```
+
+This command is relentless and effective. It recursively finds and deletes these folders, guaranteeing that your next build is completely clean and uses only the newly specified dependencies.
+
+#### **2. Clean & Build**
+
+Once the workspace is clean, the next step is to build. I typically start with a straightforward clean and build to ensure everything compiles as expected. This is a command I use frequently.
+
+```bash
+$ dotnet clean && dotnet build
+```
+
+However, in a large solution, the output can be noisy. When I'm focused solely on identifying compilation errors, I use a quieter build command. The `-v q` (quiet verbosity) combined with `--clp:ErrorsOnly` gives me exactly what I need: a list of problems, and nothing more.
+
+In a large mono-repo, the results will take a while to appear, making this targeted command even more useful.
+
+```bash
+$ dotnet clean && dotnet build -v q --clp:ErrorsOnly
+```
+
+#### **3. Mastering NuGet: The Art of Dependency Investigation**
+
+When an unexpected or transitive dependency appears, the `dotnet nuget why` command is an invaluable diagnostic tool. (Thanks to Artiom for this tip!) It allows you to query the dependency graph and understand precisely why a particular package is being included in your project. You can find more details in the official documentation: [Microsoft Docs](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-nuget-why).
+
+```bash
+# General Usage
+$ dotnet nuget why [<PROJECT|SOLUTION>] <PACKAGE> [-f|--framework <FRAMEWORK>]
+
+# Help Command
+$ dotnet nuget why -h|--help
+```
+
+And what about when you suspect a corrupted package in your local cache? A forceful clearing of all local NuGet caches can resolve a host of stubborn build issues that defy logical explanation.
+
+```bash
+$ dotnet nuget locals all --clear
+```
+
+In the most extreme cases, I've had to perform manual surgery by navigating to the NuGet packages directory and removing a problematic package by hand. This is a last resort, but it's a powerful tool to have in your back pocket. It is also much faster than clearing the entire NuGet cache.
+
+```bash
+# Navigate to the global packages folder on a Mac
+cd ~/.nuget/packages
+
+# Manually remove a problematic package, e.g., mongodb.driver
+rm -rf mongodb.driver
+```
+
+---
+
+#### **4. Looking to the Future: Paving the Way for .NET 10**
+
+A proactive upgrade strategy involves preparing for what's next. One technique we're exploring is to configure our CI/CD pipelines to use a forward-looking SDK version. For instance, in a GitHub workflow, we can specify the .NET 10 SDK for services that are currently targeting .NET 6 or .NET 8.
+
+```yaml
+dotnet_version: '10.x' 
+```
+
+This allows us to validate compatibility and identify potential issues long before we formally retarget the projects, turning a future "big bang" migration into a more manageable, incremental process.
+
+It's worth noting that I have not yet extensively used the **.NET Upgrade Assistant**, but if you find it useful, please share your views.
+
+I am also aware of using AI for upgrades, but my experience with Gemini and Copilot was not satisfactory. Perhaps a better prompt could help. I simply asked to "upgrade library X in service Y to version Z and update the required dependencies."
+
+That being said, I still find some of the insights from AI helpful when investigating an issue. It is as if I am discussing the problem with a technical digital assistant, which helps me come up with ideas. However, I've found that in some cases, the digital assistant repeats its suggestions. I have not yet found a way to instruct it to forget its previous, invalid assumptions.
+
+My next personal investigation is to architect a strategy for upgrading services from .NET 8 to .NET 10 within a large mono-repo. The primary goal is to avoid a monolithic, high-risk upgrade and instead devise a method for a phased, service-by-service migration.
+
+The journey of a software developer is one of continuous learning. These are some of my notes from the road. What are yours?
