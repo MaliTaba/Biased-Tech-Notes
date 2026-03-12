@@ -12,7 +12,7 @@ Real-world engineering is complex and messy.
 # What you’ll find here
 Opinions on tech topics.
 
-Some lessons learned from production, not theory.
+Some lessons learned from production work and investigations.
 
 
 # How to read this
@@ -20,5 +20,5 @@ Disagree freely.
 
 Be constructive in your comments.
 
-If a note feels wrong, it probably means your constraints differ—and that’s the point.
+If a note feels wrong, it probably means our constraints differ.
 Take what’s useful, ignore what isn’t, and always apply your own judgment.
